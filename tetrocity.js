@@ -1,33 +1,50 @@
 class Grid {
-
-  constructor(height,width){
+  constructor(height, width) {
     this.height = height;
     this.width = width;
   }
 
-  clear(){
-    
-  }
+  clear() {}
 }
 
 class Space {
-
-  constructor(filled = false, x, y){
+  constructor(filled = false, x, y) {
     this.filled = filled;
     this.x = x;
     this.y = y;
   }
-  
-  fill(){
+
+  fill() {
     this.filled = true;
   }
-
 }
 
-class Shape {
-  constructor(){}
+const gameData = {
+  startingPosition: { x: 40, y: 0 }
+};
 
-  rotate(){
-    
-  }
+const shapes = {
+  square: {
+    bricks: [[0,0],[0,1],[1,0],[1,1]],
+  },
+  longBar: {
+    bricks: [[0,0],[0,1],[0,2],[0,3]],
+  },
+  leftL: {
+    bricks: [[0,0],[0,1],[0,2],[1,2]],
+  },
+  rightL: {
+    bricks: [[1,0],[1,1],[1,2],[0,2]],
+  },
+  leftS: {
+    bricks: [[0,0],[1,0],[1,1],[1,2]],
+  },
+  rightS: {},
+  threeBar: {}
+};
+
+class Shape {
+  constructor(type) {}
+
+  rotate() {}
 }
