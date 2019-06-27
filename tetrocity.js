@@ -64,7 +64,6 @@ class Grid {
     this.logGrid()
   }
 }
-  
 
 let griddy = new Grid;
 griddy.renderPiece(SHAPES.square)
