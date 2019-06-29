@@ -42,12 +42,26 @@ class Grid {
       }
     }
   }
+
   dropPiece() {
     this.renderPiece(this.piece.shape, false); // clear up previous position
+
     this.piece.row = this.piece.row + 1;
     this.renderPiece(this.piece.shape); // render new position
     this.logGrid();
   }
+
+  pieceCanAdvance() {
+    if (this.piece.row + 1 > HEIGHT - 1) {
+      this.landPiece();
+      return false;
+    }
+    if (this.grid[row + 1].indexOf(1) === -1) {
+      return true;
+    }
+  }
+
+  landPiece() {}
 
   movePiece(offset) {
     this.piece.col = this.piece.col + offset;
