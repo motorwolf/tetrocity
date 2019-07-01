@@ -50,6 +50,15 @@ class Grid {
     for (let r = 0; r < shape.length; r++) {
       for (let c = 0; c < shape[0].length; c++) {
         if (shape[r][c] === "1") {
+          if(this.grid[this.piece.row + r] === undefined){
+            console.log("R",r);
+            console.log('row', this.piece.row);
+            console.log("testMove",testMove);
+            console.log("fill",fill);
+          }
+          if(this.piece.row + r > HEIGHT - 1){
+            return false;
+          }
           if(this.grid[this.piece.row + r][this.piece.col + c] === 1 && testMove){
             return false;
           }
@@ -85,26 +94,27 @@ class Grid {
       this.fill(this.piece.shape);
       this.landPiece();
     }
-    this.rotatePiece();
     this.logGrid();
   }
 
   rotatePiece(){
+    this.clear(this.piece.shape);
     let oldShape = [...this.piece.shape];
-    let newShape = Array.from({length: oldShape.length}, () => '');
+    let newShape = [];//Array.from({length: oldShape[0].length}, () => '');
     while(oldShape[0] !== ''){
+      let newShapeLine = '';
       for(let r = 0; r < oldShape.length; r++){
-        debugger;
-        newShape[r] += oldShape[r][0];
+        newShapeLine += oldShape[r][0];
         oldShape[r] = oldShape[r].slice(1);
       }
+      newShape.push(newShapeLine);
     }
     this.piece.shape = newShape;
+    this.fill(this.piece.shape);
   }
 
   pieceCanAdvance() {
     if (this.piece.row > HEIGHT - 1) {
-      this.landPiece();
       return false;
     }
     
@@ -121,12 +131,19 @@ class Grid {
     this.piece.row = 0;
     this.piece.col = STARTING_POSITION;
     this.piece.shape = SHAPES[Math.floor(Math.random() * SHAPES.length)].schema;
-    console.log(this.piece.shape);
     this.fill(this.piece.shape);
   }
 
   movePiece(offset) {
+    this.clear(this.piece.shape);
     this.piece.col = this.piece.col + offset;
+    if(this.pieceCanAdvance()){
+      this.fill(this.piece.shape);
+    }
+    else {
+      this.piece.col = this.piece.col - offset;
+      this.fill(this.piece.shape);
+    }
   }
 
   youAreDead() {
@@ -155,3 +172,26 @@ setTimeout(() => {
   clearInterval(drop);
   logTheEnd();
 }, 1000000);
+
+const readline = require('readline');
+readline.emitKeypressEvents(process.stdin);
+process.stdin.setRawMode(true);
+process.stdin.on('keypress', (str,key) => {
+  if(key.ctrl && key.name === 'c'){
+  process.exit();
+  }
+  else {
+    switch(key.name){
+      case('up'):
+        griddy.rotatePiece();
+        break;
+      case('left'):
+        griddy.movePiece(-1);
+        break;
+      case('right'):
+        griddy.movePiece(1);
+        break;
+    }
+  }
+})
+
