@@ -3,35 +3,35 @@ var WIDTH = 10;
 var STARTING_POSITION = Math.floor((WIDTH - 1) / 2);
 var SHAPES = [
     { type: "square",
-        schema: ["11", "11"]
+        diagram: ["11", "11"]
     },
     { type: "rightL",
-        schema: ["1.", "1.", "11"]
+        diagram: ["1.", "1.", "11"]
     },
     { type: "leftL",
-        schema: [".1",
+        diagram: [".1",
             ".1",
             "11",
         ]
     },
     { type: 'rightZ',
-        schema: ["1.",
+        diagram: ["1.",
             "11",
             ".1",
         ]
     },
     { type: "leftZ",
-        schema: [
+        diagram: [
             ".1",
             "11",
             "1."
         ]
     },
     { type: 'line',
-        schema: ["1", "1", "1", "1"]
+        diagram: ["1", "1", "1", "1"]
     },
     { type: 'prong',
-        schema: [
+        diagram: [
             ".1.",
             "111",
         ]

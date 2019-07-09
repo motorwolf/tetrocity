@@ -2,50 +2,50 @@ const HEIGHT: number = 25;
 const WIDTH: number = 10;
 const STARTING_POSITION: number = Math.floor((WIDTH - 1) / 2);
 
-interface shape {
+interface Shape {
   type: string,
-  schema: string[],
+  diagram: string[],
 }
 
-interface piece {
+interface Piece {
     row: number;
     col: number;
     shape: string[];
 }
 
-const SHAPES: shape[] = [
+const SHAPES: Shape[] = [
   { type: "square",
-    schema: ["11", "11"],
+    diagram: ["11", "11"],
   },
   { type: "rightL",
-    schema: ["1.", "1.", "11"],
+    diagram: ["1.", "1.", "11"],
   },
   { type: "leftL",
-    schema: 
+    diagram: 
     [".1",
     ".1",
     "11",
     ]
   },
   { type: 'rightZ',
-    schema: 
+    diagram: 
     ["1.",
     "11",
     ".1",
     ]
   },
   { type: "leftZ",
-    schema: [
+    diagram: [
       ".1",
       "11",
       "1."
     ]
   },
   {type: 'line',
-    schema: ["1", "1", "1", "1"],
+    diagram: ["1", "1", "1", "1"],
   },
   {type: 'prong',
-  schema: [
+  diagram: [
     ".1.",
     "111",
     ],
@@ -54,10 +54,11 @@ const SHAPES: shape[] = [
 
 class Game {
 
-  grid: [][];
+  grid: number[][];
   gameType: string;
   interval: number;
   totalScore: number;
+  piece: Piece;
 
   constructor(type) {
     this.grid = [];
@@ -72,10 +73,10 @@ class Game {
       this.grid = [...this.grid, row];
     }
     this.totalScore = 0;
-    this.piece: piece = {
+    this.piece = {
       row: 0,
       col: STARTING_POSITION,
-      shape: SHAPES[3].schema,
+      shape: SHAPES[3].diagram,
     };
   }
 
@@ -154,11 +155,11 @@ class Game {
     this.renderPiece(this.piece.shape, false)
   }
 
-  fill() {
+  fill(): void {
     this.renderPiece(this.piece.shape, true)
   }
 
-  testMove() {
+  testMove(): boolean {
     return this.renderPiece(this.piece.shape, false, true)
   }
 
@@ -214,16 +215,16 @@ class Game {
     return this.testMove()
   }
 
-  landPiece() {
+  landPiece(): void {
     const rowsCleared = this.clearRows();
     if(rowsCleared > 0) this.totalScore++;
     this.piece.row = 0;
     this.piece.col = STARTING_POSITION;
-    this.piece.shape = SHAPES[Math.floor(Math.random() * SHAPES.length)].schema;
+    this.piece.shape = SHAPES[Math.floor(Math.random() * SHAPES.length)].diagram;
     this.fill();
   }
 
-  movePiece(offset) {
+  movePiece(offset: number) {
     this.clear();
     const newCol = this.piece.col + offset;
     if(newCol > -1 && newCol <= (WIDTH - this.piece.shape[0].length)){
