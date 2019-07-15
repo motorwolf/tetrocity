@@ -21,8 +21,7 @@ var SHAPES = [
         ]
     },
     { type: "leftZ",
-        diagram: [
-            ".1",
+        diagram: [".1",
             "11",
             "1."
         ]
@@ -51,16 +50,13 @@ var Game = /** @class */ (function () {
             this.grid = this.grid.concat([row]);
         }
         this.totalScore = 0;
-        this.piece;
-        piece = {
-            row: 0,
-            col: STARTING_POSITION,
-            shape: SHAPES[3].schema
-        };
+        this.pieceRow = 0;
+        this.pieceCol = STARTING_POSITION;
+        this.shape = SHAPES[3].diagram;
     }
     Game.prototype.startGame = function () {
         var _this = this;
-        var drop = setInterval(function () { return _this.dropPiece(); }, 800);
+        var drop = setInterval(function () { return _this.dropPiece(); }, 1000);
         var logTheEnd = function () {
             console.log("the end");
         };
@@ -101,58 +97,59 @@ var Game = /** @class */ (function () {
         });
         console.log("=========================");
     };
-    Game.prototype.renderPiece = function (shape, fill, testMove) {
-        if (fill === void 0) { fill = true; }
-        if (testMove === void 0) { testMove = false; }
-        for (var r = 0; r < shape.length; r++) {
-            for (var c = 0; c < shape[0].length; c++) {
-                if (shape[r][c] === "1") {
-                    // if(this.grid[this.piece.row + r] === undefined){
-                    //   console.log("R",r);
-                    //   console.log('row', this.piece.row);
-                    //   console.log("testMove",testMove);
-                    //   console.log("fill",fill);
-                    // }
-                    if (this.piece.row + r > HEIGHT - 1) {
-                        return false;
-                    }
-                    if (this.grid[this.piece.row + r][this.piece.col + c] === 1 && testMove) {
-                        return false;
-                    }
-                    if (!testMove) {
-                        this.grid[this.piece.row + r][this.piece.col + c] = fill ? 1 : 0;
-                    }
+    Game.prototype.canPieceAdvance = function (direction) {
+        this.clear();
+        var row = this.pieceRow;
+        var col = this.pieceCol;
+        switch (direction) {
+            case 'down':
+                row++;
+                break;
+            case 'left':
+                col--;
+                break;
+            case 'right':
+                col++;
+                break;
+            default:
+                break;
+        }
+        if (row + this.shape.length > HEIGHT || col < 0 || col + this.shape[0].length > WIDTH) {
+            this.fill();
+            return false;
+        }
+        for (var r = 0; r < this.shape.length; r++) {
+            for (var c = 0; c < this.shape[0].length; c++) {
+                if (this.grid[row + r][col + c] === 1) {
+                    this.fill();
+                    return false;
                 }
             }
         }
         return true;
     };
-    Game.prototype.clear = function () {
-        this.renderPiece(this.piece.shape, false);
-    };
     Game.prototype.fill = function () {
-        this.renderPiece(this.piece.shape, true);
-    };
-    Game.prototype.testMove = function () {
-        return this.renderPiece(this.piece.shape, false, true);
-    };
-    Game.prototype.dropPiece = function () {
-        this.clear();
-        this.piece.row = this.piece.row + 1;
-        if (this.pieceCanAdvance()) {
-            this.fill();
+        for (var r = 0; r < this.shape.length; r++) {
+            for (var c = 0; c < this.shape[0].length; c++) {
+                if (this.shape[r][c] === '1') {
+                    this.grid[this.pieceRow + r][this.pieceCol + c] = 1;
+                }
+            }
         }
-        else {
-            this.piece.row = this.piece.row - 1;
-            this.fill();
-            this.landPiece();
+    };
+    Game.prototype.clear = function () {
+        for (var r = 0; r < this.shape.length; r++) {
+            for (var c = 0; c < this.shape[0].length; c++) {
+                if (this.shape[r][c] === '1') {
+                    this.grid[this.pieceRow + r][this.pieceCol + c] = 0;
+                }
+            }
         }
-        this.renderGrid(this.gameType);
     };
     Game.prototype.rotatePiece = function () {
         // Currently this only rotates to the right
         this.clear();
-        var oldShape = this.piece.shape.slice();
+        var oldShape = this.shape.slice();
         var newShape = [];
         while (oldShape[0] !== '') {
             var newShapeLine = '';
@@ -162,51 +159,62 @@ var Game = /** @class */ (function () {
             }
             newShape.push(newShapeLine);
         }
-        this.piece.shape = newShape;
-        this.fill();
+        this.shape = newShape;
+        if ((this.pieceCol + this.shape[0].length) >= WIDTH - 1) {
+            this.pieceCol = WIDTH - this.shape[0].length;
+        }
+        this.canPieceAdvance(null) ? this.fill() : this.shape = oldShape;
     };
     Game.prototype.bigDrop = function () {
         this.clear();
-        this.piece.row = (this.grid.length - this.piece.shape.length) - 1;
-        while (!this.testMove()) {
-            this.piece.row--;
+        while (this.canPieceAdvance('down')) {
+            this.pieceRow++;
         }
         this.fill();
+        this.landPiece();
     };
-    Game.prototype.pieceCanAdvance = function () {
-        if (this.piece.row > HEIGHT - 1) {
-            return false;
+    Game.prototype.dropPiece = function () {
+        this.clear();
+        if (this.canPieceAdvance('down')) {
+            this.pieceRow++;
+            this.fill();
         }
-        var nextLine = this.piece.row + this.piece.shape.length;
-        if (nextLine < this.grid.length && this.grid[nextLine].indexOf(1) === -1) {
-            return true;
+        else {
+            this.fill();
+            this.landPiece();
         }
-        return this.testMove();
+        this.renderGrid(this.gameType);
+        // rendering will now be handled in the type of file.
     };
     Game.prototype.landPiece = function () {
         var rowsCleared = this.clearRows();
         if (rowsCleared > 0)
             this.totalScore++;
-        this.piece.row = 0;
-        this.piece.col = STARTING_POSITION;
-        this.piece.shape = SHAPES[Math.floor(Math.random() * SHAPES.length)].schema;
+        this.pieceRow = 0;
+        this.pieceCol = STARTING_POSITION;
+        this.shape = SHAPES[Math.floor(Math.random() * SHAPES.length)].diagram;
         this.fill();
     };
-    Game.prototype.movePiece = function (offset) {
-        this.clear();
-        var newCol = this.piece.col + offset;
-        if (newCol > -1 && newCol <= (WIDTH - this.piece.shape[0].length)) {
-            this.piece.col = this.piece.col + offset;
-            if (this.pieceCanAdvance()) {
-                this.fill();
+    Game.prototype.movePiece = function (direction) {
+        if (this.canPieceAdvance(direction)) {
+            this.clear();
+            switch (direction) {
+                case 'down':
+                    this.pieceRow++;
+                    break;
+                case 'left':
+                    this.pieceCol--;
+                    break;
+                case 'right':
+                    this.pieceCol++;
+                    break;
+                default:
+                    console.log("No direction.");
             }
-            else {
-                this.piece.col = this.piece.col - offset;
-                this.fill();
-            }
+            this.fill();
         }
     };
-    Game.prototype.youAreDead = function () {
+    Game.prototype.areYouDead = function () {
         return this.grid[0].indexOf(1) !== -1;
     };
     Game.prototype.clearRows = function () {
@@ -215,8 +223,12 @@ var Game = /** @class */ (function () {
         this.grid.forEach(function (row, i) {
             if (row.every(function (char) { return char === 1; })) {
                 counter++;
+                var newRow = [];
+                for (var i_1 = 0; i_1 < WIDTH; i_1++) {
+                    newRow.push(0);
+                }
                 _this.grid.splice(i, 1);
-                _this.grid.splice(0, 0, Array.from({ length: WIDTH }, function () { return 0; }));
+                _this.grid.splice(0, 0, newRow);
             }
         });
         return counter;
@@ -233,15 +245,16 @@ var Game = /** @class */ (function () {
                         process.exit();
                     }
                     else {
+                        debugger;
                         switch (key.name) {
                             case ('up'):
                                 _this.rotatePiece();
                                 break;
                             case ('left'):
-                                _this.movePiece(-1);
+                                _this.movePiece('left');
                                 break;
                             case ('right'):
-                                _this.movePiece(1);
+                                _this.movePiece('right');
                                 break;
                             case ('down'):
                                 _this.bigDrop();
@@ -273,6 +286,6 @@ var Game = /** @class */ (function () {
     return Game;
 }());
 console.log('load');
-var griddy = new Game('web');
+var griddy = new Game('console');
 griddy.keyLogger(true);
 griddy.startGame();

@@ -1,16 +1,10 @@
-const HEIGHT: number = 25;
-const WIDTH: number = 10;
-const STARTING_POSITION: number = Math.floor((WIDTH - 1) / 2);
+const HEIGHT = 25;
+const WIDTH = 10;
+const STARTING_POSITION = Math.floor((WIDTH - 1) / 2);
 
 interface Shape {
-  type: string,
-  diagram: string[],
-}
-
-interface Piece {
-    row: number;
-    col: number;
-    shape: string[];
+  type: string;
+  diagram: string[];
 }
 
 const SHAPES: Shape[] = [
@@ -35,8 +29,8 @@ const SHAPES: Shape[] = [
     ]
   },
   { type: "leftZ",
-    diagram: [
-      ".1",
+    diagram: 
+    [".1",
       "11",
       "1."
     ]
@@ -58,14 +52,16 @@ class Game {
   gameType: string;
   interval: number;
   totalScore: number;
-  piece: Piece;
+  shape: string[];
+  pieceRow: number;
+  pieceCol: number;
 
   constructor(type) {
     this.grid = [];
     this.gameType = type;
     this.interval = 3;
     for (let r = 0; r < HEIGHT; r++) {
-      let row: number[] = [];
+      let row = [];
       for (let c = 0; c < WIDTH; c++) {
         const filler: number = r > HEIGHT/2 ? 1 : 0;
         row = [...row, filler];
@@ -73,15 +69,13 @@ class Game {
       this.grid = [...this.grid, row];
     }
     this.totalScore = 0;
-    this.piece = {
-      row: 0,
-      col: STARTING_POSITION,
-      shape: SHAPES[3].diagram,
-    };
+    this.pieceRow = 0;
+    this.pieceCol = STARTING_POSITION;
+    this.shape = SHAPES[3].diagram;
   }
 
   startGame(){
-    const drop = setInterval(() => this.dropPiece(), 800);
+    const drop = setInterval(() => this.dropPiece(), 1000);
     const logTheEnd = () => {
       console.log("the end");
     };
@@ -109,7 +103,7 @@ class Game {
     gameboard.innerHTML = '';
     this.grid.forEach(gridRow => {
       let row = document.createElement('div');
-      row.className = 'row'
+      row.className = 'row';
       gridRow.forEach(column => {
         let cell = document.createElement('div');
         cell.className = column === 0 ? 'cell' : 'cell filled'
@@ -126,61 +120,64 @@ class Game {
     console.log("=========================");
   }
 
-  renderPiece(shape, fill = true, testMove = false) {
-    for (let r = 0; r < shape.length; r++) {
-      for (let c = 0; c < shape[0].length; c++) {
-        if (shape[r][c] === "1") {
-          // if(this.grid[this.piece.row + r] === undefined){
-          //   console.log("R",r);
-          //   console.log('row', this.piece.row);
-          //   console.log("testMove",testMove);
-          //   console.log("fill",fill);
-          // }
-          if(this.piece.row + r > HEIGHT - 1){
-            return false;
-          }
-          if(this.grid[this.piece.row + r][this.piece.col + c] === 1 && testMove){
-            return false;
-          }
-          if(!testMove){
-            this.grid[this.piece.row + r][this.piece.col + c] = fill ? 1 : 0;
-          }
-        }
+  canPieceAdvance(direction){
+    this.clear();
+    let row = this.pieceRow;
+    let col = this.pieceCol;
+    
+    switch(direction){
+      case 'down':
+        row++;
+        break;
+      case 'left':
+        col--;
+        break;
+      case 'right':
+        col++;
+        break;
+      default:
+        break;
+    }
+
+    if(row + this.shape.length > HEIGHT || col < 0 || col + this.shape[0].length > WIDTH){
+      this.fill();
+      return false;
+    }
+    for(let r = 0; r < this.shape.length; r++){
+      for(let c = 0; c < this.shape[0].length; c++){
+        if(this.grid[row + r][col + c] === 1){
+          this.fill();
+          return false;
+        } 
       }
     }
     return true;
   }
 
-  clear() {
-    this.renderPiece(this.piece.shape, false)
-  }
-
-  fill(): void {
-    this.renderPiece(this.piece.shape, true)
-  }
-
-  testMove(): boolean {
-    return this.renderPiece(this.piece.shape, false, true)
-  }
-
-  dropPiece() {
-    this.clear();
-    this.piece.row = this.piece.row + 1;
-    if(this.pieceCanAdvance()){
-      this.fill()
-    } 
-    else {
-      this.piece.row = this.piece.row - 1;
-      this.fill();
-      this.landPiece();
+  fill(){
+    for(let r = 0; r < this.shape.length; r++){
+      for(let c = 0; c < this.shape[0].length; c++){
+        if(this.shape[r][c] === '1'){
+          this.grid[this.pieceRow + r][this.pieceCol + c] = 1;
+        }
+      }
     }
-    this.renderGrid(this.gameType);
+  }
+
+  clear(){
+    for(let r = 0; r < this.shape.length; r++){
+      for(let c = 0; c < this.shape[0].length; c++){
+        if(this.shape[r][c] === '1'){
+          this.grid[this.pieceRow + r][this.pieceCol + c] = 0;
+        }
+      }
+    }
   }
 
   rotatePiece(){ 
     // Currently this only rotates to the right
     this.clear();
-    let oldShape = [...this.piece.shape];
+    let oldShape = [...this.shape];
     let newShape = [];
     while(oldShape[0] !== ''){
       let newShapeLine = '';
@@ -190,56 +187,66 @@ class Game {
       }
       newShape.push(newShapeLine);
     }
-    this.piece.shape = newShape;
-    this.fill();
+    this.shape = newShape;
+    if((this.pieceCol + this.shape[0].length) >= WIDTH - 1){
+      this.pieceCol = WIDTH - this.shape[0].length;
+    }
+    this.canPieceAdvance(null) ? this.fill() : this.shape = oldShape;
   }
 
   bigDrop(){
     this.clear();
-    this.piece.row = (this.grid.length - this.piece.shape.length) - 1;
-    while(!this.testMove()){
-      this.piece.row--;
+    while(this.canPieceAdvance('down')){
+      this.pieceRow++;
     }
     this.fill();
+    this.landPiece();
   }
 
-  pieceCanAdvance() {
-    if (this.piece.row > HEIGHT - 1) {
-      return false;
+  dropPiece() {
+    this.clear();
+    if(this.canPieceAdvance('down')){
+      this.pieceRow++;
+      this.fill();
+    } 
+    else {
+      this.fill();
+      this.landPiece();
     }
-    
-    let nextLine = this.piece.row + this.piece.shape.length;
-    if (nextLine < this.grid.length && this.grid[nextLine].indexOf(1) === -1) {
-      return true;
-    }
-    return this.testMove()
+    this.renderGrid(this.gameType);
+    // rendering will now be handled in the type of file.
   }
 
-  landPiece(): void {
+  landPiece(){
     const rowsCleared = this.clearRows();
     if(rowsCleared > 0) this.totalScore++;
-    this.piece.row = 0;
-    this.piece.col = STARTING_POSITION;
-    this.piece.shape = SHAPES[Math.floor(Math.random() * SHAPES.length)].diagram;
+    this.pieceRow = 0;
+    this.pieceCol = STARTING_POSITION;
+    this.shape = SHAPES[Math.floor(Math.random() * SHAPES.length)].diagram;
     this.fill();
   }
 
-  movePiece(offset: number) {
-    this.clear();
-    const newCol = this.piece.col + offset;
-    if(newCol > -1 && newCol <= (WIDTH - this.piece.shape[0].length)){
-      this.piece.col = this.piece.col + offset;
-      if(this.pieceCanAdvance()){
-        this.fill();
+  movePiece(direction) {
+    if(this.canPieceAdvance(direction)){
+      this.clear();
+      switch(direction){
+        case 'down':
+          this.pieceRow++;
+          break;
+        case 'left':
+          this.pieceCol--;
+          break;
+        case 'right':
+          this.pieceCol++;
+          break;
+        default:
+          console.log("No direction.");
       }
-      else {
-        this.piece.col = this.piece.col - offset;
-        this.fill();
-      }
+      this.fill();
     }
   }
 
-  youAreDead() {
+  areYouDead() {
     return this.grid[0].indexOf(1) !== -1
   }
 
@@ -248,8 +255,12 @@ class Game {
     this.grid.forEach((row,i) => {
       if(row.every(char => char === 1)){
         counter++;
+        const newRow = [];
+        for(let i = 0; i < WIDTH; i++){
+          newRow.push(0);
+        }
         this.grid.splice(i,1);
-        this.grid.splice(0,0,Array.from({length: WIDTH},() => 0));
+        this.grid.splice(0,0,newRow);
       }
     });
     return counter; 
@@ -267,15 +278,16 @@ class Game {
             process.exit();
           }
           else {
+            debugger;
             switch(key.name){
               case('up'):
                 this.rotatePiece();
                 break;
               case('left'):
-                this.movePiece(-1);
+                this.movePiece('left');
                 break;
               case('right'):
-                this.movePiece(1);
+                this.movePiece('right');
                 break;
               case('down'):
                 this.bigDrop();
@@ -307,6 +319,6 @@ class Game {
 }
 
 console.log('load');
-let griddy = new Game('web');
+let griddy = new Game('console');
 griddy.keyLogger(true);
 griddy.startGame();
