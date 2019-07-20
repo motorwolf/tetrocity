@@ -1,6 +1,6 @@
-const HEIGHT = 25;
-const WIDTH = 10;
-const STARTING_POSITION = Math.floor((WIDTH - 1) / 2);
+const HEIGHT: number = 25;
+const WIDTH: number = 10;
+const STARTING_POSITION: number = Math.floor((WIDTH - 1) / 2);
 
 interface Shape {
   type: string;
@@ -64,7 +64,7 @@ class Game {
       let row = [];
       for (let c = 0; c < WIDTH; c++) {
         const filler: number = r > HEIGHT/2 ? 1 : 0;
-        row = [...row, filler];
+        row = [...row, 0];
       }
       this.grid = [...this.grid, row];
     }
@@ -145,7 +145,7 @@ class Game {
     }
     for(let r = 0; r < this.shape.length; r++){
       for(let c = 0; c < this.shape[0].length; c++){
-        if(this.grid[row + r][col + c] === 1){
+        if(this.grid[row + r][col + c] === 1 && this.shape[r][c] === '1'){
           this.fill();
           return false;
         } 
@@ -226,9 +226,9 @@ class Game {
     this.fill();
   }
 
-  movePiece(direction) {
+  movePiece(direction: string) {
+    this.clear();
     if(this.canPieceAdvance(direction)){
-      this.clear();
       switch(direction){
         case 'down':
           this.pieceRow++;
@@ -244,6 +244,11 @@ class Game {
       }
       this.fill();
     }
+  }
+
+  tick(){
+    this.dropPiece();
+
   }
 
   areYouDead() {
@@ -267,7 +272,7 @@ class Game {
   }
 
 
-  keyLogger (enabled){
+  keyLogger (enabled: boolean){
     if(enabled){
       if(this.gameType === 'console'){
         const readline = require('readline');
@@ -303,10 +308,10 @@ class Game {
               this.rotatePiece();
               break;
             case('ArrowLeft'):
-              this.movePiece(-1);
+              this.movePiece('left');
               break;
             case('ArrowRight'):
-              this.movePiece(1);
+              this.movePiece('right');
               break;
             case('ArrowDown'):
               this.bigDrop();
@@ -319,6 +324,6 @@ class Game {
 }
 
 console.log('load');
-let griddy = new Game('console');
+let griddy = new Game('web');
 griddy.keyLogger(true);
 griddy.startGame();
