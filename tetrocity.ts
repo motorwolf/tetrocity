@@ -46,24 +46,54 @@ const SHAPES: Shape[] = [
   }
 ];
 
-class Game {
+interface RenderableGame {
+  getHeight(): number;
+  getWidth(): number;
+  isFilled(r: number, c: number): boolean;
+}
 
-  grid: number[][];
-  gameType: string;
-  interval: number;
-  totalScore: number;
-  shape: string[];
-  pieceRow: number;
-  pieceCol: number;
+function htmlRender(game: RenderableGame){
+  let gameboard = document.getElementById('gameboard');
+  gameboard.innerHTML = '';
+  for(let r = 0; r < game.getHeight(); r++) {
+    let row = document.createElement('div');
+    row.className = 'row';
+    for(let c = 0; c < game.getWidth(); c++){
+        let cell = document.createElement('div');
+        cell.className = game.isFilled(r,c) ? 'cell filled' : 'cell';
+        row.appendChild(cell);
+      }
+      gameboard.appendChild(row);
+    }
+}
 
-  constructor(type) {
+function consoleRender(game: RenderableGame){
+  console.log("==========================")
+  for(let r = 0; r < game.getHeight(); r++){
+    let row: string = '';
+    for(let c = 0; c < game.getWidth(); c++){
+      row += game.isFilled(r,c) ? '[]' : '00';
+    }
+    console.log(row);
+  }
+}
+
+
+class Game implements RenderableGame {
+
+  private grid: number[][];
+  private interval: number;
+  private totalScore: number;
+  private shape: string[];
+  private pieceRow: number;
+  private pieceCol: number;
+
+  constructor() {
     this.grid = [];
-    this.gameType = type;
-    this.interval = 3;
+    this.interval = 10;
     for (let r = 0; r < HEIGHT; r++) {
       let row = [];
       for (let c = 0; c < WIDTH; c++) {
-        const filler: number = r > HEIGHT/2 ? 1 : 0;
         row = [...row, 0];
       }
       this.grid = [...this.grid, row];
@@ -74,54 +104,19 @@ class Game {
     this.shape = SHAPES[3].diagram;
   }
 
-  startGame(){
-    const drop = setInterval(() => this.dropPiece(), 1000);
-    const logTheEnd = () => {
-      console.log("the end");
-    };
-    setTimeout(() => {
-      clearInterval(drop);
-      logTheEnd();
-    }, 1000000);
+  getHeight(){
+    return this.grid.length;
   }
 
-  renderGrid(type){
-    switch(type){
-      case('console'):
-        this.logGrid();
-        break;
-      case('web'):
-        this.buildElements();
-        break;
-      default:
-        console.log('No type.');
-    }
+  getWidth(){
+    return this.grid[0].length;
   }
 
-  buildElements(){
-    let gameboard = document.getElementById('gameboard');
-    gameboard.innerHTML = '';
-    this.grid.forEach(gridRow => {
-      let row = document.createElement('div');
-      row.className = 'row';
-      gridRow.forEach(column => {
-        let cell = document.createElement('div');
-        cell.className = column === 0 ? 'cell' : 'cell filled'
-        row.appendChild(cell);
-      });
-      gameboard.appendChild(row);
-    });
-  }
-
-  logGrid() {
-    this.grid.forEach(row => {
-      console.log(row.join(""));
-    });
-    console.log("=========================");
+  getInterval(){
+    return this.interval;
   }
 
   canPieceAdvance(direction){
-    this.clear();
     let row = this.pieceRow;
     let col = this.pieceCol;
     
@@ -139,14 +134,14 @@ class Game {
         break;
     }
 
+    //boundary check
     if(row + this.shape.length > HEIGHT || col < 0 || col + this.shape[0].length > WIDTH){
-      this.fill();
       return false;
     }
+
     for(let r = 0; r < this.shape.length; r++){
       for(let c = 0; c < this.shape[0].length; c++){
         if(this.grid[row + r][col + c] === 1 && this.shape[r][c] === '1'){
-          this.fill();
           return false;
         } 
       }
@@ -162,21 +157,25 @@ class Game {
         }
       }
     }
+    const rowsCleared = this.clearRows();
+    if(rowsCleared > 0) this.totalScore++;
+    this.pieceRow = 0;
+    this.pieceCol = STARTING_POSITION;
+    this.shape = SHAPES[Math.floor(Math.random() * SHAPES.length)].diagram;
   }
 
-  clear(){
-    for(let r = 0; r < this.shape.length; r++){
-      for(let c = 0; c < this.shape[0].length; c++){
-        if(this.shape[r][c] === '1'){
-          this.grid[this.pieceRow + r][this.pieceCol + c] = 0;
-        }
+  isFilled(r: number,c: number): boolean {
+    if (this.grid[r][c] === 1) return true
+    if(r >= this.pieceRow && r < this.pieceRow + this.shape.length){
+      if(c >= this.pieceCol && c < this.pieceCol + this.shape[0].length){
+        return this.shape[r - this.pieceRow][c - this.pieceCol] === '1'
       }
     }
+    return false
   }
 
   rotatePiece(){ 
     // Currently this only rotates to the right
-    this.clear();
     let oldShape = [...this.shape];
     let newShape = [];
     while(oldShape[0] !== ''){
@@ -191,43 +190,26 @@ class Game {
     if((this.pieceCol + this.shape[0].length) >= WIDTH - 1){
       this.pieceCol = WIDTH - this.shape[0].length;
     }
-    this.canPieceAdvance(null) ? this.fill() : this.shape = oldShape;
+    if(!this.canPieceAdvance(null)) this.shape = oldShape;
   }
 
   bigDrop(){
-    this.clear();
     while(this.canPieceAdvance('down')){
       this.pieceRow++;
     }
     this.fill();
-    this.landPiece();
   }
 
   dropPiece() {
-    this.clear();
     if(this.canPieceAdvance('down')){
       this.pieceRow++;
-      this.fill();
     } 
     else {
       this.fill();
-      this.landPiece();
     }
-    this.renderGrid(this.gameType);
-    // rendering will now be handled in the type of file.
-  }
-
-  landPiece(){
-    const rowsCleared = this.clearRows();
-    if(rowsCleared > 0) this.totalScore++;
-    this.pieceRow = 0;
-    this.pieceCol = STARTING_POSITION;
-    this.shape = SHAPES[Math.floor(Math.random() * SHAPES.length)].diagram;
-    this.fill();
   }
 
   movePiece(direction: string) {
-    this.clear();
     if(this.canPieceAdvance(direction)){
       switch(direction){
         case 'down':
@@ -242,13 +224,11 @@ class Game {
         default:
           console.log("No direction.");
       }
-      this.fill();
     }
   }
 
-  tick(){
+  turn(){
     this.dropPiece();
-
   }
 
   areYouDead() {
@@ -270,60 +250,66 @@ class Game {
     });
     return counter; 
   }
-
-
-  keyLogger (enabled: boolean){
-    if(enabled){
-      if(this.gameType === 'console'){
-        const readline = require('readline');
-        readline.emitKeypressEvents(process.stdin);
-        process.stdin.setRawMode(true);
-        process.stdin.on('keypress', (str,key) => {
-          if(key.ctrl && key.name === 'c'){
-            process.exit();
-          }
-          else {
-            debugger;
-            switch(key.name){
-              case('up'):
-                this.rotatePiece();
-                break;
-              case('left'):
-                this.movePiece('left');
-                break;
-              case('right'):
-                this.movePiece('right');
-                break;
-              case('down'):
-                this.bigDrop();
-                break;
-            }
-          }
-        })
-      }
-      if(this.gameType === 'web'){
-        document.addEventListener('keydown', e => {
-          switch(e.key){
-            case('ArrowUp'):
-              this.rotatePiece();
-              break;
-            case('ArrowLeft'):
-              this.movePiece('left');
-              break;
-            case('ArrowRight'):
-              this.movePiece('right');
-              break;
-            case('ArrowDown'):
-              this.bigDrop();
-              break;
-          }
-        })
-      }
-    }
-  }
 }
 
-console.log('load');
-let griddy = new Game('web');
-griddy.keyLogger(true);
-griddy.startGame();
+function browserGame(){
+  const game = new Game;
+  document.addEventListener('keydown', e => {
+          switch(e.key){
+            case('ArrowUp'):
+              game.rotatePiece();
+              break;
+            case('ArrowLeft'):
+              game.movePiece('left');
+              break;
+            case('ArrowRight'):
+              game.movePiece('right');
+              break;
+            case('ArrowDown'):
+              game.bigDrop();
+              break;
+          }
+        })
+  const tick = () => {
+    game.turn();
+    htmlRender(game);
+  }
+  const gameTime = setInterval(tick, game.getInterval() * 100);
+}
+
+function consoleGame(){
+  const game = new Game();
+  const readline = require('readline');
+  readline.emitKeypressEvents(process.stdin);
+  process.stdin.setRawMode(true);
+  process.stdin.on('keypress', (str,key) => {
+    if(key.ctrl && key.name === 'c'){
+      process.exit();
+    }
+    else {
+      switch(key.name){
+        case('up'):
+          game.rotatePiece();
+          break;
+        case('left'):
+          game.movePiece('left');
+          break;
+        case('right'):
+          game.movePiece('right');
+          break;
+        case('down'):
+          game.bigDrop();
+          break;
+      }
+    }
+  });
+  const tick = () => {
+    game.turn();
+    consoleRender(game);
+  }
+  const runGame = setInterval(tick, game.getInterval() * 100);
+}
+
+browserGame();
+
+
